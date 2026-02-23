@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { getCourseAll, addCourse as apiAddCourse, updateCourse as apiUpdateCourse, deleteCourse as apiDeleteCourse } from '@/api/course'
 import { getTeacherAll, addTeacher as apiAddTeacher, updateTeacher as apiUpdateTeacher, deleteTeacher as apiDeleteTeacher } from '@/api/teacher'
 import { getObjectivesByCourse, addObjective as apiAddObjective, updateObjective as apiUpdateObjective, deleteObjective as apiDeleteObjective } from '@/api/objective'
-import { getCourseTaskList, addCourseTask as apiAddTask, updateCourseTask as apiUpdateTask, deleteCourseTask as apiDeleteTask } from '@/api/courseTask'
+import { getCourseTaskList, addCourseTask as apiAddTask, updateCourseTask as apiUpdateTask, deleteCourseTask as apiDeleteTask, assignTeacher as apiAssignTeacher } from '@/api/courseTask'
 import { getUploadList } from '@/api/upload'
 
 export const useCourseStore = defineStore('courses', () => {
@@ -14,11 +14,18 @@ export const useCourseStore = defineStore('courses', () => {
     const queryResults = ref([])
     const selectedCourseId = ref(null)
     const loading = ref(false)
-    const tagColorMap = {
-        '目标一': { bg: '#dbeafe', text: '#2563eb' },
-        '目标二': { bg: '#dcfce7', text: '#16a34a' },
-        '目标三': { bg: '#f3e8ff', text: '#9333ea' },
-        '目标四': { bg: '#fef3c7', text: '#d97706' },
+    const colorPalette = [
+        { bg: '#dbeafe', text: '#2563eb' },
+        { bg: '#dcfce7', text: '#16a34a' },
+        { bg: '#f3e8ff', text: '#9333ea' },
+        { bg: '#fef3c7', text: '#d97706' },
+        { bg: '#fee2e2', text: '#dc2626' }
+    ]
+
+    function getTagColors(tag) {
+        if (!tag) return { bg: '#e5e7eb', text: '#374151' }
+        const hash = Array.from(tag).reduce((acc, char) => acc + char.charCodeAt(0), 0)
+        return colorPalette[hash % colorPalette.length]
     }
 
     const selectedCourse = computed(() => courses.value.find(c => c.id === selectedCourseId.value))
@@ -54,15 +61,14 @@ export const useCourseStore = defineStore('courses', () => {
         try {
             const res = await getObjectivesByCourse(courseId)
             objectives.value = (res.data || []).map(o => {
-                const colors = tagColorMap[o.tag] || { bg: '#e5e7eb', text: '#374151' }
+                const colors = getTagColors(o.tag)
                 return { ...o, tagColor: o.tagColor || colors.bg, tagTextColor: o.tagTextColor || colors.text }
             })
         } catch (e) { console.error('获取目标失败', e) }
     }
 
     async function addObjective(obj) {
-        const colors = tagColorMap[obj.tag] || { bg: '#e5e7eb', text: '#374151' }
-        await apiAddObjective({ ...obj, tagColor: colors.bg, tagTextColor: colors.text })
+        await apiAddObjective(obj)
         await fetchObjectives(obj.courseId)
     }
     async function updateObjective(id, data) {
@@ -94,6 +100,10 @@ export const useCourseStore = defineStore('courses', () => {
         await apiDeleteTask(id)
         await fetchCourseTasks()
     }
+    async function assignTeacher(data) {
+        await apiAssignTeacher(data)
+        await fetchCourseTasks()
+    }
 
     // 上传记录 
     async function fetchUploadRecords(teacherId) {
@@ -109,10 +119,10 @@ export const useCourseStore = defineStore('courses', () => {
 
     return {
         courses, objectives, courseTasks, uploadRecords, queryResults,
-        selectedCourseId, selectedCourse, selectedObjectives, loading, tagColorMap,
+        selectedCourseId, selectedCourse, selectedObjectives, loading, getTagColors,
         fetchCourses, addCourse, updateCourse, deleteCourse,
         fetchObjectives, addObjective, updateObjective, deleteObjective,
-        fetchCourseTasks, addCourseTask, updateCourseTask, deleteCourseTask,
+        fetchCourseTasks, addCourseTask, updateCourseTask, deleteCourseTask, assignTeacher,
         fetchUploadRecords, updateUploadStatus,
     }
 })

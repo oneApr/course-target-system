@@ -3,7 +3,7 @@
     <!-- Welcome header -->
     <div class="welcome-header">
       <div>
-        <div class="page-title">欢迎回来，{{ userStore.displayName }}！</div>
+        <div class="page-title">欢迎回来，{{ displayName }}！</div>
         <div class="page-subtitle">当前角色：{{ userStore.roleLabel }} | 这是您的工作概览和最近活动</div>
       </div>
     </div>
@@ -79,17 +79,17 @@
           <span class="sub-label-inline">常用功能快速访问</span>
         </div>
         <div class="quick-actions">
-          <div class="quick-btn" @click="router.push('/upload')">
-            <el-icon><Upload /></el-icon><span>上传达成数据</span>
+          <div class="quick-btn" @click="router.push('/objective-maintenance')">
+            <el-icon><Upload /></el-icon><span>维护课程目标</span>
           </div>
-          <div class="quick-btn" @click="router.push('/query')">
-            <el-icon><Document /></el-icon><span>提交分析报告</span>
+          <div class="quick-btn" @click="router.push('/teacher-management')">
+            <el-icon><Document /></el-icon><span>查询教师信息</span>
           </div>
           <div class="quick-btn" @click="router.push('/query')">
             <el-icon><TrendCharts /></el-icon><span>查看达成情况</span>
           </div>
           <div class="quick-btn" @click="router.push('/course-tasks')">
-            <el-icon><Tickets /></el-icon><span>查看教学任务</span>
+            <el-icon><Tickets /></el-icon><span>查看课程任务</span>
           </div>
         </div>
       </div>
@@ -121,7 +121,6 @@
           <div class="todo-item" v-for="todo in todos" :key="todo.id">
             <div class="todo-main">
               <div class="todo-text">{{ todo.text }}</div>
-              <div class="todo-deadline">截止日期 {{ todo.deadline }}</div>
             </div>
             <el-tag :type="todo.priority==='高'?'danger':'info'" size="small">{{ todo.priority }}</el-tag>
           </div>
@@ -132,38 +131,71 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCourseStore, useTeacherStore } from '@/stores/courses'
 import { useUserStore } from '@/stores/user'
+import request from '@/api/request'
 
 const router = useRouter()
 const userStore = useUserStore()
 const courseStore = useCourseStore()
 const teacherStore = useTeacherStore()
 onMounted(async () => {
+  await teacherStore.fetchTeachers()
   await courseStore.fetchCourses()
-  await courseStore.fetchCourseTasks()
-  await courseStore.fetchUploadRecords()
-  if (userStore.role === 'director') await teacherStore.fetchTeachers()
+  const teacherMatches = teacherStore.teachers.filter(t => t.userId === userStore.userId)
+  const tId = teacherMatches.length > 0 ? teacherMatches[0].id : null
+  await courseStore.fetchCourseTasks(tId)
+  await courseStore.fetchUploadRecords(tId)
+  await fetchActivities()
 })
 const isDirector = computed(() => userStore.role === 'director')
+
+const displayName = computed(() => {
+  const match = teacherStore.teachers.find(t => t.userId === userStore.userId)
+  return match ? match.name + '老师' : userStore.displayName
+})
+
+const realActivities = ref([])
+async function fetchActivities() {
+  try {
+    const res = await request.get('/api/activity')
+    if (res.code === 200) {
+      realActivities.value = res.data || []
+    }
+  } catch (e) { console.error('获取活动缓存失败', e) }
+}
 const totalStudents = computed(() => courseStore.courseTasks.reduce((s, t) => s + (t.studentCount || 0), 0))
 
 function getColor(v) { return v >= 85 ? '#22c55e' : v >= 75 ? '#3b82f6' : v >= 60 ? '#f59e0b' : '#ef4444' }
 
-const activities = [
-  { id: 1, text: '上传了"高等数学A"课程达成数据', time: '2小时前 · 高等数学A', type: 'upload' },
-  { id: 2, text: '审核了"线性代数"课程目标', time: '4小时前 · 线性代数', type: 'check' },
-  { id: 3, text: '提交了课程达成分析报告', time: '1天前 · 概率论与数理统计', type: 'submit' },
-  { id: 4, text: '分配了教学任务', time: '2天前 · 数据结构', type: 'assign' },
-]
+// 近期活动 (从 Redis 缓存获取，只显示用户的最新操作，不用穿透数据库)
+const activities = computed(() => {
+  return realActivities.value.map((r, index) => ({
+    id: index,
+    text: r.text,
+    time: r.time,
+    type: r.type || 'upload'
+  }))
+})
 
-const todos = [
-  { id: 1, text: '提交"线性代数"课程达成数据', deadline: '2024/1/20', priority: '高' },
-  { id: 2, text: '审核教师提交的达成报告', deadline: '2024/1/22', priority: '中' },
-  { id: 3, text: '完善课程目标与指标点关联', deadline: '2024/1/25', priority: '中' },
-]
+// 待办任务 (如果是教师，显示未提交的任务；如果是主任，显示待审核记录)
+const todos = computed(() => {
+  if (isDirector.value) {
+    return courseStore.uploadRecords.filter(r => r.status === '待审核').slice(0, 3).map((r, index) => ({
+      id: r.id || index,
+      text: `审核"${r.courseName}"(${r.teacherName})提交的达成数据,请及时处理`,
+      priority: '高'
+    }))
+  } else {
+    return courseStore.courseTasks.filter(t => t.status === '未提交').slice(0, 3).map((t, index) => ({
+      id: t.id || index,
+      text: `提交"${t.courseName}"(${t.semester})达成数据,请及时处理`,
+      priority: '高'
+    }))
+  }
+})
 </script>
 
 <style scoped>

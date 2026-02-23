@@ -19,7 +19,7 @@ public class Result<T> implements Serializable {
 
     private Result() {}
 
-    // ==================== 成功 ====================
+    // 成功响应
 
     public static <T> Result<T> success() {
         return build(ResultCode.SUCCESS, null);
@@ -35,7 +35,7 @@ public class Result<T> implements Serializable {
         return r;
     }
 
-    // ==================== 失败 ====================
+    // 失败响应
 
     public static <T> Result<T> error() {
         return build(ResultCode.SYSTEM_ERROR, null);

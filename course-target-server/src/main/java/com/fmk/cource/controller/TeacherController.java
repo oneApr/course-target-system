@@ -35,20 +35,24 @@ public class TeacherController {
         if (StringUtils.hasText(dept)) wrapper.eq(Teacher::getDept, dept);
         if (StringUtils.hasText(status)) wrapper.eq(Teacher::getStatus, status);
         wrapper.orderByDesc(Teacher::getCreateTime);
-        return Result.success(teacherService.page(new Page<>(page, size), wrapper));
+        Page<Teacher> pageObj = teacherService.page(new Page<>(page, size), wrapper);
+        teacherService.fillAccountInfo(pageObj.getRecords());
+        return Result.success(pageObj);
     }
 
     @Operation(summary = "查询全部教师（不分页，用于下拉框）")
     @GetMapping("/all")
     public Result<List<Teacher>> listAll() {
-        return Result.success(teacherService.list(
-                new LambdaQueryWrapper<Teacher>().eq(Teacher::getStatus, "1").orderByAsc(Teacher::getName)));
+        List<Teacher> list = teacherService.list(new LambdaQueryWrapper<Teacher>().orderByAsc(Teacher::getName));
+        teacherService.fillAccountInfo(list);
+        list = list.stream().filter(t -> "1".equals(t.getStatus())).collect(java.util.stream.Collectors.toList());
+        return Result.success(list);
     }
 
     @Operation(summary = "新增教师")
     @PostMapping
     public Result<Void> add(@RequestBody Teacher teacher) {
-        teacherService.save(teacher);
+        teacherService.addTeacher(teacher);
         return Result.success();
     }
 
@@ -56,20 +60,24 @@ public class TeacherController {
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody Teacher teacher) {
         teacher.setId(id);
-        teacherService.updateById(teacher);
+        teacherService.updateTeacher(teacher);
         return Result.success();
     }
 
     @Operation(summary = "删除教师")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
-        teacherService.removeById(id);
+        teacherService.deleteTeacher(id);
         return Result.success();
     }
 
     @Operation(summary = "查询教师详情")
     @GetMapping("/{id}")
     public Result<Teacher> getById(@PathVariable Long id) {
-        return Result.success(teacherService.getById(id));
+        Teacher teacher = teacherService.getById(id);
+        if (teacher != null) {
+            teacherService.fillAccountInfo(java.util.Collections.singletonList(teacher));
+        }
+        return Result.success(teacher);
     }
 }

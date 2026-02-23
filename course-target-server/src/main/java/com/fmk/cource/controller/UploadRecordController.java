@@ -32,14 +32,19 @@ public class UploadRecordController {
     @Operation(summary = "查询上传记录详情")
     @GetMapping("/{id}")
     public Result<UploadRecord> getById(@PathVariable Long id) {
-        return Result.success(uploadRecordService.getById(id));
+        UploadRecord record = uploadRecordService.getById(id);
+        if (record != null) {
+            java.util.List<com.fmk.cource.entity.UploadRecordDetail> details = com.fmk.cource.util.SpringContextUtil.getBean(com.fmk.cource.service.UploadRecordDetailService.class)
+                .list(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.fmk.cource.entity.UploadRecordDetail>().eq(com.fmk.cource.entity.UploadRecordDetail::getRecordId, id));
+            record.setDetails(details);
+        }
+        return Result.success(record);
     }
 
     @Operation(summary = "手动录入达成度数据")
     @PostMapping
     public Result<Void> add(@RequestBody UploadRecord record) {
-        record.setStatus("待审核");
-        uploadRecordService.save(record);
+        uploadRecordService.addRecord(record);
         return Result.success();
     }
 
@@ -47,25 +52,26 @@ public class UploadRecordController {
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody UploadRecord record) {
         record.setId(id);
-        uploadRecordService.updateById(record);
+        uploadRecordService.updateRecord(record);
         return Result.success();
+    }
+
+    @Operation(summary = "导入带附件的成绩（自动挂载达成度明细）")
+    @PostMapping("/excel")
+    public Result<UploadRecord> importExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("courseId") Long courseId,
+            @RequestParam("teacherId") Long teacherId,
+            @RequestParam("semester") String semester,
+            @RequestParam(value = "details", required = false) String detailsJson) throws IOException {
+        return Result.success(uploadRecordService.importExcel(file, courseId, teacherId, semester, detailsJson));
     }
 
     @Operation(summary = "删除上传记录")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
-        uploadRecordService.removeById(id);
+        uploadRecordService.deleteRecord(id);
         return Result.success();
-    }
-
-    @Operation(summary = "Excel 文件导入达成度数据")
-    @PostMapping(value = "/excel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result<UploadRecord> importExcel(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam Long courseId,
-            @RequestParam Long teacherId,
-            @RequestParam String semester) throws IOException {
-        return Result.success(uploadRecordService.importExcel(file, courseId, teacherId, semester));
     }
 
     @Operation(summary = "审核达成度数据（通过/驳回）")

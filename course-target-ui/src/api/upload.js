@@ -11,6 +11,15 @@ export function uploadExcel(formData) {
         headers: { 'Content-Type': 'multipart/form-data' }
     })
 }
+/** 手动填写达成度 */
+export function addUploadRecord(data) {
+    return request.post('/api/upload-record', data)
+}
+
+/** 重新修改填写达成度 */
+export function updateUploadRecord(id, data) {
+    return request.put(`/api/upload-record/${id}`, data)
+}
 
 /** 审核（系主任）*/
 export function auditRecord(id, data) {

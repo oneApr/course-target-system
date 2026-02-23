@@ -23,4 +23,10 @@ public class Teacher {
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    @TableField(exist = false)
+    private String account;
+
+    @TableField(exist = false)
+    private String password;
 }

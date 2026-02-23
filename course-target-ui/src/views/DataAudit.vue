@@ -49,19 +49,14 @@
       <el-table :data="filtered" stripe style="width:100%" table-layout="auto">
         <el-table-column prop="courseName" label="课程名称" min-width="120" />
         <el-table-column prop="semester" label="学期" min-width="150" />
-        <el-table-column prop="teacher" label="提交教师" min-width="90" />
+        <el-table-column prop="teacherName" label="提交教师" min-width="90" />
         <el-table-column prop="uploadTime" label="提交时间" min-width="110" />
         <el-table-column label="达成度数据" min-width="200">
           <template #default="{row}">
-            <div v-if="row.objectives" style="display:flex;gap:6px;flex-wrap:wrap">
-              <span v-for="(val, key) in row.objectives" :key="key" class="obj-chip">
-                {{ key }}: <b>{{ val }}%</b>
+            <div v-if="row.details && row.details.length > 0" style="display:flex;gap:6px;flex-wrap:wrap">
+              <span v-for="(d, i) in row.details" :key="i" class="obj-chip">
+                目标{{ i + 1 }}: <b>{{ d.achievementRate }}%</b>
               </span>
-            </div>
-            <div v-else-if="row.objective1!=null" style="display:flex;gap:6px;flex-wrap:wrap">
-              <span v-if="row.objective1!=null" class="obj-chip">目标一: <b>{{ row.objective1 }}%</b></span>
-              <span v-if="row.objective2!=null" class="obj-chip">目标二: <b>{{ row.objective2 }}%</b></span>
-              <span v-if="row.objective3!=null" class="obj-chip">目标三: <b>{{ row.objective3 }}%</b></span>
             </div>
             <span v-else style="color:#94a3b8;font-size:12px">暂无数据</span>
           </template>
@@ -106,7 +101,7 @@
       <!-- Course banner -->
       <div v-if="auditTarget" class="audit-banner" :class="auditMode==='approve'?'banner-green':'banner-red'">
         <div style="font-weight:600;font-size:13px">{{ auditTarget.courseName }} · {{ auditTarget.semester }}</div>
-        <div style="font-size:12px;margin-top:2px;opacity:.8">提交教师：{{ auditTarget.teacher }}</div>
+        <div style="font-size:12px;margin-top:2px;opacity:.8">提交教师：{{ auditTarget.teacherName }}</div>
       </div>
 
       <el-form style="margin-top:16px">
@@ -142,33 +137,22 @@
       <div v-if="detailRow">
         <div style="margin-bottom:16px">
           <div style="font-weight:600;font-size:15px;margin-bottom:4px">{{ detailRow.courseName }}</div>
-          <div style="font-size:13px;color:#64748b">{{ detailRow.semester }} · 教师：{{ detailRow.teacher }} · {{ detailRow.uploadTime }}</div>
+          <div style="font-size:13px;color:#64748b">{{ detailRow.semester }} · 教师：{{ detailRow.teacherName }} · {{ detailRow.uploadTime }}</div>
         </div>
 
         <!-- Objective progress bars -->
         <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
-          <template v-if="detailRow.objectives">
-            <div v-for="(val, key) in detailRow.objectives" :key="key">
+          <template v-if="detailRow.details && detailRow.details.length > 0">
+            <div v-for="(d, i) in detailRow.details" :key="i">
               <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                <span style="font-size:13px;font-weight:600">{{ key }}</span>
-                <span :style="{fontWeight:600,color:getColor(val)}">{{ val }}%</span>
+                <span style="font-size:13px;font-weight:600">目标{{ i + 1 }}</span>
+                <span :style="{fontWeight:600,color:getColor(d.achievementRate)}">{{ d.achievementRate }}%</span>
               </div>
-              <el-progress :percentage="val" :stroke-width="8" :color="getColor(val)" :show-text="false" />
+              <el-progress :percentage="d.achievementRate" :stroke-width="8" :color="getColor(d.achievementRate)" :show-text="false" />
             </div>
           </template>
           <template v-else>
-            <div v-if="detailRow.objective1!=null">
-              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:13px;font-weight:600">目标一</span><span :style="{fontWeight:600,color:getColor(detailRow.objective1)}">{{ detailRow.objective1 }}%</span></div>
-              <el-progress :percentage="detailRow.objective1" :stroke-width="8" :color="getColor(detailRow.objective1)" :show-text="false" />
-            </div>
-            <div v-if="detailRow.objective2!=null">
-              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:13px;font-weight:600">目标二</span><span :style="{fontWeight:600,color:getColor(detailRow.objective2)}">{{ detailRow.objective2 }}%</span></div>
-              <el-progress :percentage="detailRow.objective2" :stroke-width="8" :color="getColor(detailRow.objective2)" :show-text="false" />
-            </div>
-            <div v-if="detailRow.objective3!=null">
-              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:13px;font-weight:600">目标三</span><span :style="{fontWeight:600,color:getColor(detailRow.objective3)}">{{ detailRow.objective3 }}%</span></div>
-              <el-progress :percentage="detailRow.objective3" :stroke-width="8" :color="getColor(detailRow.objective3)" :show-text="false" />
-            </div>
+            <span style="color:#94a3b8;font-size:12px">暂无数据</span>
           </template>
         </div>
 
@@ -210,7 +194,7 @@ const filtered = computed(() => store.uploadRecords.filter(r => {
   if (filterCourse.value && r.courseName !== filterCourse.value) return false
   if (search.value) {
     const q = search.value.toLowerCase()
-    if (!r.courseName?.toLowerCase().includes(q) && !r.teacher?.includes(q)) return false
+    if (!r.courseName?.toLowerCase().includes(q) && !r.teacherName?.includes(q)) return false
   }
   return true
 }))
@@ -220,7 +204,7 @@ function statusTagType(s) {
 }
 function getColor(v) { return v >= 85 ? '#22c55e' : v >= 75 ? '#3b82f6' : v >= 60 ? '#f59e0b' : '#ef4444' }
 
-// ---- Unified Audit Dialog ----
+// 统一审核弹窗
 const showAuditDialog = ref(false)
 const auditMode = ref('approve')   // 'approve' | 'reject'
 const auditComment = ref('')
@@ -261,7 +245,7 @@ async function doReview(row) {
   } catch (_) {}
 }
 
-// Detail view
+// 详情视图
 const showDetailDialog = ref(false)
 const detailRow = ref(null)
 function viewDetail(row) {

@@ -17,16 +17,20 @@ export const useUserStore = defineStore('user', () => {
     async function login(usernameInput, passwordInput) {
         try {
             const res = await apiLogin({ username: usernameInput, password: passwordInput })
-            const data = res.data  // { token, userId, username, displayName, role, menus }
+            const data = res.data
             token.value = data.token
-            userInfo.value = {
-                userId: data.userId,
-                username: data.username,
-                displayName: data.displayName,
-                role: data.role,        // "director" 或 "teacher"
-                menus: data.menus || []
-            }
             localStorage.setItem('token', data.token)
+
+            // 获取当前用户信息+菜单
+            const infoRes = await getUserInfo()
+            const infoData = infoRes.data
+            userInfo.value = {
+                userId: infoData.userId,
+                username: infoData.username,
+                displayName: infoData.displayName,
+                role: infoData.roleKey,
+                menus: infoData.menus || []
+            }
             localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
             return { success: true }
         } catch (e) {

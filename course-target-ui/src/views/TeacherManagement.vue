@@ -15,11 +15,11 @@
         <div class="stat-card-icon icon-blue"><el-icon><UserFilled /></el-icon></div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-info"><div class="stat-label">在职数量</div><div class="stat-value">{{ store.teachers.filter(t=>t.status==='在职').length }}</div></div>
+        <div class="stat-card-info"><div class="stat-label">在职数量</div><div class="stat-value">{{ store.teachers.filter(t=>t.status === '1').length }}</div></div>
         <div class="stat-card-icon icon-green"><el-icon><UserFilled /></el-icon></div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-info"><div class="stat-label">离职数量</div><div class="stat-value">{{ store.teachers.filter(t=>t.status==='离职').length }}</div></div>
+        <div class="stat-card-info"><div class="stat-label">离职数量</div><div class="stat-value">{{ store.teachers.filter(t=>t.status === '0').length }}</div></div>
         <div class="stat-card-icon icon-orange"><el-icon><UserFilled /></el-icon></div>
       </div>
     </div>
@@ -41,10 +41,10 @@
         <el-table-column prop="gender" label="性别" min-width="60" />
         <el-table-column prop="phone" label="联系电话" min-width="130" />
         <el-table-column prop="dept" label="所属系部" min-width="110" />
-        <el-table-column prop="account" label="登录账号" min-width="120" />
-        <el-table-column label="状态" min-width="80">
+        <el-table-column prop="title" label="职称" min-width="120" />
+        <el-table-column label="状态"  min-width="80">
           <template #default="{row}">
-            <el-tag :type="row.status==='在职'?'success':'info'" size="small">{{ row.status }}</el-tag>
+            <el-tag :type="row.status === '1' ? 'success' : 'info'" size="small">{{ row.status === '1' ? '在职' : '离职' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="90" fixed="right">
@@ -99,13 +99,27 @@
         <el-form-item label="登录密码">
           <el-input v-model="form.password" placeholder="请输入登录密码（编辑时留空则不修改）" type="password" show-password />
         </el-form-item>
-        <el-form-item label="联系电话">
-          <el-input v-model="form.phone" placeholder="请输入手机号" />
-        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="联系电话">
+              <el-input v-model="form.phone" placeholder="请输入手机号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="职称">
+              <el-select v-model="form.title" style="width:100%" placeholder="讲师" allow-create filterable>
+                <el-option label="教授" value="教授" />
+                <el-option label="副教授" value="副教授" />
+                <el-option label="讲师" value="讲师" />
+                <el-option label="助教" value="助教" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width:100%">
-            <el-option label="在职" value="在职" />
-            <el-option label="离职" value="离职" />
+            <el-option label="在职" value="1" />
+            <el-option label="离职" value="0" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -133,8 +147,8 @@ const editId = ref(null)
 const formRef = ref(null)
 
 const form = reactive({
-  name: '', gender: '男', account: '', dept: '数学系',
-  password: '', confirmPassword: '', phone: '', status: '在职'
+  name: '', gender: '', account: '', dept: '', title: '',
+  password: '', confirmPassword: '', phone: '', status: '1'
 })
 
 const rules = {
@@ -154,13 +168,13 @@ const filtered = computed(() => store.teachers.filter(t => {
 
 function openAdd() {
   isEdit.value = false; editId.value = null
-  Object.assign(form, { name: '', gender: '男', account: '', dept: '数学系', password: '', confirmPassword: '', phone: '', status: '在职' })
+  Object.assign(form, { name: '', gender: '', account: '', dept: '', title: '', password: '', confirmPassword: '', phone: '', status: '1' })
   showDialog.value = true
 }
 
 function openEdit(row) {
   isEdit.value = true; editId.value = row.id
-  Object.assign(form, { name: row.name, gender: row.gender, account: row.account, dept: row.dept, password: '', confirmPassword: '', phone: row.phone || '', status: row.status })
+  Object.assign(form, { name: row.name, gender: row.gender, account: row.account, dept: row.dept, title: row.title || '', password: '', confirmPassword: '', phone: row.phone || '', status: row.status })
   showDialog.value = true
 }
 
@@ -168,10 +182,10 @@ function doSave() {
   formRef.value?.validate(valid => {
     if (!valid) return
     if (isEdit.value) {
-      store.updateTeacher(editId.value, { name: form.name, gender: form.gender, account: form.account, dept: form.dept, phone: form.phone, status: form.status })
+      store.updateTeacher(editId.value, { name: form.name, gender: form.gender, account: form.account, dept: form.dept, title: form.title, phone: form.phone, status: form.status })
       ElMessage.success('教师信息已更新')
     } else {
-      store.addTeacher({ name: form.name, gender: form.gender, account: form.account, dept: form.dept, phone: form.phone, status: form.status })
+      store.addTeacher({ name: form.name, gender: form.gender, account: form.account, dept: form.dept, title: form.title, phone: form.phone, status: form.status })
       ElMessage.success('教师添加成功')
     }
     showDialog.value = false

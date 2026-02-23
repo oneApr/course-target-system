@@ -11,6 +11,10 @@ import java.util.Map;
 
 public interface UploadRecordService extends IService<UploadRecord> {
     List<UploadRecordVO> listWithDetail(Long teacherId);
-    UploadRecord importExcel(MultipartFile file, Long courseId, Long teacherId, String semester) throws IOException;
+    UploadRecord importExcel(MultipartFile file, Long courseId, Long teacherId, String semester, String detailsJson) throws IOException;
     void audit(Long id, String status, String auditComment);
+
+    void addRecord(UploadRecord record);
+    void updateRecord(UploadRecord record);
+    void deleteRecord(Long id);
 }

@@ -15,7 +15,7 @@
           <el-option v-for="c in store.courses" :key="c.id" :label="`${c.name}（${c.code}）`" :value="c.id" />
         </el-select>
         <el-tag v-if="store.selectedCourse" type="info">
-          {{ store.selectedCourse.dept }} · 授课教师：{{ store.selectedCourse.teacher }}
+          {{ store.selectedCourse.dept }} · 授课教师：{{ currentCourseTeachers || '未分配' }}
         </el-tag>
       </div>
     </div>
@@ -27,57 +27,11 @@
           <div class="stat-label">{{ obj.tag }}</div>
           <div style="font-size:13px;color:#475569;margin-top:2px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ obj.description }}</div>
         </div>
-        <el-tag :style="{ background: obj.tagColor, color: obj.tagTextColor, border:'none' }" size="small">{{ obj.weight }}%</el-tag>
+        <el-tag :style="{ background: obj.tagColor, color: obj.tagTextColor, border:'none' }" size="small">{{ obj.weight || '0%' }}</el-tag>
       </div>
     </div>
 
-    <!-- ====== 新增课程目标 ====== -->
-    <div class="section-card" style="margin-bottom:16px">
-      <div class="section-title" style="margin-bottom:16px">新增课程目标</div>
 
-      <el-row :gutter="20">
-        <el-col :span="4">
-          <div class="field-block">
-            <label class="field-lbl">目标类型</label>
-            <el-select v-model="addForm.tag" style="width:100%">
-              <el-option v-for="t in ['目标一','目标二','目标三','目标四']" :key="t" :label="t" :value="t" />
-            </el-select>
-          </div>
-        </el-col>
-        <el-col :span="6">
-          <div class="field-block">
-            <label class="field-lbl">关联毕业要求</label>
-            <el-select v-model="addForm.requirement" style="width:100%">
-              <el-option v-for="r in requirements" :key="r" :label="r" :value="r" />
-            </el-select>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="field-block">
-            <label class="field-lbl">指标点（可选）</label>
-            <el-input v-model="addForm.indicator" placeholder="如：指标点1.2" />
-          </div>
-        </el-col>
-        <el-col :span="3">
-          <div class="field-block">
-            <label class="field-lbl">权重（%）</label>
-            <el-input-number v-model="addForm.weightNum" :min="0" :max="100" style="width:100%" />
-          </div>
-        </el-col>
-        <el-col :span="7">
-          <div class="field-block">
-            <label class="field-lbl">课程目标描述</label>
-            <el-input v-model="addForm.description" placeholder="请描述本课程目标，使学生能够..." />
-          </div>
-        </el-col>
-      </el-row>
-
-      <div style="margin-top:16px">
-        <el-button type="primary" @click="doAdd">新增目标</el-button>
-      </div>
-    </div>
-
-    <!-- 目标列表 -->
     <div class="section-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div class="section-title">
@@ -92,7 +46,7 @@
 
       <div v-if="!store.selectedObjectives.length" style="text-align:center;color:#94a3b8;padding:48px 0">
         <el-icon style="font-size:40px;margin-bottom:12px"><DocumentAdd /></el-icon>
-        <div>暂无课程目标，请在上方"新增课程目标"添加</div>
+        <div>暂无课程目标，请在"课程目标管理页面"添加</div>
       </div>
 
       <div v-else class="obj-list">
@@ -103,9 +57,9 @@
           <div class="obj-body">
             <div class="obj-desc">{{ obj.description }}</div>
             <div class="obj-meta-row">
-              <span class="meta-chip">毕业要求：{{ obj.requirement }}</span>
+              <span class="meta-chip">毕业要求：{{ obj.requirements?.join('、') || '-' }}</span>
               <span class="meta-chip">指标点：{{ obj.indicator }}</span>
-              <span class="meta-chip">权重：{{ obj.weight }}%</span>
+              <span class="meta-chip">权重：{{ obj.weight || '0%' }}</span>
             </div>
           </div>
           <div class="obj-actions">
@@ -120,14 +74,14 @@
     <el-dialog v-model="showEditDialog" title="编辑课程目标" width="500px" destroy-on-close>
       <el-form :model="editForm" label-width="110px">
         <el-form-item label="目标类型">
-          <el-select v-model="editForm.tag" style="width:100%">
-            <el-option v-for="t in ['目标一','目标二','目标三','目标四']" :key="t" :label="t" :value="t" />
+          <el-select v-model="editForm.tag" style="width:100%" filterable allow-create default-first-option>
+            <el-option v-for="t in historyTags" :key="t" :label="t" :value="t" />
           </el-select>
         </el-form-item>
         <el-form-item label="目标描述"><el-input v-model="editForm.description" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="关联毕业要求">
-          <el-select v-model="editForm.requirement" style="width:100%">
-            <el-option v-for="r in requirements" :key="r" :label="r" :value="r" />
+          <el-select v-model="editForm.requirements" multiple style="width:100%" filterable allow-create default-first-option>
+            <el-option v-for="r in historyRequirements" :key="r" :label="r" :value="r" />
           </el-select>
         </el-form-item>
         <el-form-item label="指标点"><el-input v-model="editForm.indicator" /></el-form-item>
@@ -142,45 +96,51 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { Edit, Delete, DocumentAdd } from '@element-plus/icons-vue'
 import { useCourseStore } from '@/stores/courses'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const store = useCourseStore()
 
-const requirements = ['工程知识', '问题分析', '设计/开发解决方案', '研究', '使用现代工具', '工程与社会', '环境和可持续发展', '职业规范', '个人和团队', '沟通', '项目管理', '终身学习']
+// 提取当前选中课程的所有讲师
+const currentCourseTeachers = computed(() => {
+  if (!store.selectedCourseId) return ''
+  const tasks = store.courseTasks.filter(t => t.courseId === store.selectedCourseId)
+  if (!tasks.length) return ''
+  const names = tasks.flatMap(t => (t.assignments || []).map(a => a.teacherName)).filter(Boolean)
+  return names.length > 0 ? [...new Set(names)].join('，') : ''
+})
 
-const addForm = reactive({
-  tag: '目标一',
-  description: '',
-  weight: '',
-  weightNum: 20,
-  requirement: '工程知识',
-  indicator: ''
+onMounted(async () => {
+  await store.fetchCourses()
+  await store.fetchCourseTasks() // Fetch course tasks
+  if (store.selectedCourseId) {
+    await store.fetchObjectives(store.selectedCourseId)
+  }
+})
+
+watch(() => store.selectedCourseId, id => {
+  if (id) store.fetchObjectives(id)
+})
+
+const historyTags = computed(() => {
+  const s = new Set();
+  store.selectedObjectives.forEach(o => { if (o.tag) s.add(o.tag) })
+  return [...s].sort()
+})
+
+const historyRequirements = computed(() => {
+  const s = new Set();
+  store.selectedObjectives.forEach(o => {
+    if (o.requirements) o.requirements.forEach(r => s.add(r))
+  })
+  return [...s].sort()
 })
 
 const totalWeight = computed(() =>
-  store.selectedObjectives.reduce((s, o) => s + (Number(o.weight) || 0), 0)
+  store.selectedObjectives.reduce((s, o) => s + (parseInt(String(o.weight||'0').replace('%','')) || 0), 0)
 )
-
-function doAdd() {
-  if (!addForm.description) { ElMessage.warning('请输入课程目标描述'); return }
-  const w = Number(addForm.weight) || addForm.weightNum || 20
-  const colors = store.tagColorMap[addForm.tag] || { bg: '#e5e7eb', text: '#374151' }
-  store.addObjective({
-    courseId: store.selectedCourseId,
-    tag: addForm.tag,
-    description: addForm.description,
-    requirement: addForm.requirement,
-    indicator: addForm.indicator || '-',
-    weight: w,
-    tagColor: colors.bg,
-    tagTextColor: colors.text
-  })
-  ElMessage.success('目标添加成功')
-  addForm.description = ''; addForm.indicator = ''; addForm.weight = ''; addForm.weightNum = 20
-}
 
 function scrollToObj(id) {
   document.getElementById(`obj-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -188,17 +148,30 @@ function scrollToObj(id) {
 
 const showEditDialog = ref(false)
 const editId = ref(null)
-const editForm = reactive({ tag: '', requirement: '', indicator: '', weightNum: 0, description: '' })
+const editForm = reactive({ tag: '', requirements: [], indicator: '', weightNum: 0, description: '' })
 
 function openEditObj(obj) {
   editId.value = obj.id
-  Object.assign(editForm, { tag: obj.tag, requirement: obj.requirement, indicator: obj.indicator, weightNum: Number(obj.weight), description: obj.description })
+  Object.assign(editForm, { 
+    tag: obj.tag, 
+    requirements: Array.isArray(obj.requirements) ? obj.requirements : (obj.requirements ? [obj.requirements] : []), 
+    indicator: obj.indicator, 
+    weightNum: parseInt(String(obj.weight || '0').replace('%', '')) || 0, 
+    description: obj.description 
+  })
   showEditDialog.value = true
 }
 
 function saveEditObj() {
-  const colors = store.tagColorMap[editForm.tag] || { bg: '#e5e7eb', text: '#374151' }
-  store.updateObjective(editId.value, { tag: editForm.tag, description: editForm.description, requirement: editForm.requirement, indicator: editForm.indicator, weight: editForm.weightNum, tagColor: colors.bg, tagTextColor: colors.text })
+  store.updateObjective(editId.value, { 
+    id: editId.value,
+    courseId: store.selectedCourseId,
+    tag: editForm.tag, 
+    description: editForm.description, 
+    requirements: editForm.requirements, 
+    indicator: editForm.indicator, 
+    weight: editForm.weightNum + '%'
+  })
   showEditDialog.value = false
   ElMessage.success('已保存')
 }

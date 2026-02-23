@@ -16,12 +16,13 @@ public class UploadRecord {
     private Long courseId;
     private Long teacherId;
     private String semester;
-    private BigDecimal objective1;
-    private BigDecimal objective2;
-    private BigDecimal objective3;
     private String status;
     private String auditComment;
     private String filePath;
+
+    @TableField(exist = false)
+    private java.util.List<UploadRecordDetail> details;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime uploadTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

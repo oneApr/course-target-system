@@ -119,8 +119,8 @@ const loading = ref(false)
 const errorMsg = ref('')
 
 const form = reactive({
-  username: '',
-  password: '',
+  username: 'director',
+  password: '123456',
   remember: false,
   agreed: false
 })
@@ -141,7 +141,6 @@ async function handleLogin() {
   if (!form.username) { showError('请输入用户名'); return }
   if (!form.password) { showError('请输入密码'); return }
   loading.value = true
-  // 调用后端真实接口
   const result = await userStore.login(form.username, form.password)
   loading.value = false
   if (result.success) {
@@ -153,7 +152,6 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-/* ===== Full-page background ===== */
 .login-page {
   position: fixed;
   inset: 0;
@@ -168,7 +166,7 @@ async function handleLogin() {
   background-color: #dde8f5;
 }
 
-/* ===== Two-panel card ===== */
+/* 两侧面板卡片 */
 .login-card {
   position: relative;
   z-index: 1;
@@ -180,7 +178,7 @@ async function handleLogin() {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* ===== LEFT panel ===== */
+/* 左侧面板 */
 .left-panel {
   flex: 1;
   background: rgba(238, 242, 247, 0.88);
@@ -242,7 +240,7 @@ async function handleLogin() {
   margin-top: 1px;
 }
 
-/* ===== RIGHT panel ===== */
+/* 右侧面板 */
 .right-panel {
   width: 380px;
   flex-shrink: 0;
@@ -270,7 +268,7 @@ async function handleLogin() {
   color: #94a3b8;
 }
 
-/* ===== Form fields ===== */
+/* 表单字段 */
 .field-group {
   margin-bottom: 18px;
 }
@@ -320,7 +318,7 @@ async function handleLogin() {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
-/* ===== Options row ===== */
+/* 选项行 */
 .options-row {
   display: flex;
   justify-content: space-between;
@@ -354,7 +352,7 @@ async function handleLogin() {
   text-decoration: underline;
 }
 
-/* ===== Login button ===== */
+/* 登录按钮 */
 .login-btn {
   width: 100%;
   height: 40px;
@@ -379,7 +377,7 @@ async function handleLogin() {
   cursor: not-allowed;
 }
 
-/* ===== Agreement ===== */
+/* 协议 */
 .agreement-row {
   display: flex;
   align-items: center;
@@ -402,14 +400,14 @@ async function handleLogin() {
   text-decoration: underline;
 }
 
-/* ===== Register ===== */
+/* 注册 */
 .register-row {
   text-align: center;
   font-size: 13px;
   color: #6b7280;
 }
 
-/* ===== Error toast ===== */
+/* 错误提示 */
 .error-toast {
   position: fixed;
   top: 24px;

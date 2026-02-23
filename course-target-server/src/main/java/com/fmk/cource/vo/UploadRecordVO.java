@@ -14,9 +14,7 @@ public class UploadRecordVO {
     private Long teacherId;
     private String teacherName;
     private String semester;
-    private BigDecimal objective1;
-    private BigDecimal objective2;
-    private BigDecimal objective3;
+    private java.util.List<com.fmk.cource.entity.UploadRecordDetail> details;
     private String status;
     private String auditComment;
     private String filePath;

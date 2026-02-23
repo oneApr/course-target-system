@@ -80,11 +80,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         SysUser user = new SysUser();
         user.setUsername(registerVO.getUsername());
         user.setPassword(passwordEncoder.encode(registerVO.getPassword()));
-        user.setDisplayName(registerVO.getDisplayName());
+        
+        // 自动把账号分配为老师，并且display_name默认展示为usename+老师
+        String roleKey = registerVO.getRoleKey() != null ? registerVO.getRoleKey() : "teacher";
+        if ("teacher".equals(roleKey)) {
+            user.setDisplayName(registerVO.getUsername() + "老师");
+        } else {
+            user.setDisplayName(registerVO.getDisplayName() != null ? registerVO.getDisplayName() : registerVO.getUsername());
+        }
         user.setStatus("1");
         save(user);
         // 分配角色
-        String roleKey = registerVO.getRoleKey() != null ? registerVO.getRoleKey() : "teacher";
         SysRole role = sysRoleMapper.selectOne(
                 new LambdaQueryWrapper<SysRole>().eq(SysRole::getRoleKey, roleKey));
         if (role != null) {
@@ -117,8 +123,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         List<SysRole> roles = sysRoleMapper.selectRolesByUserId(user.getUserId());
         if (!roles.isEmpty()) {
-            vo.setRoleKey(roles.get(0).getRoleKey());
+            String roleKey = roles.get(0).getRoleKey();
+            vo.setRoleKey(roleKey);
             vo.setRoleName(roles.get(0).getRoleName());
+            
+            // 如果是老师应该是usename+老师，如果是系主任就是原样（或默认系主任姓名）
+            if ("teacher".equals(roleKey)) {
+                vo.setDisplayName(user.getUsername() + "老师");
+            } else if ("director".equals(roleKey)) {
+                vo.setDisplayName(user.getDisplayName() != null && !user.getDisplayName().isEmpty() ? user.getDisplayName() : "系主任");
+            }
         }
 
         List<SysMenu> menus = sysMenuMapper.selectMenusByUserId(user.getUserId());

@@ -24,6 +24,6 @@ public class CourseTargetApplication {
 
         System.out.println(fmkLogo);
         // \033[32m 是开启绿色字体
-        System.out.println("✨ \033[32m课程目标达成情况管理系统 启动成功!\033[0m ✨");
+        System.out.println("\033[32m课程目标达成情况管理系统 启动成功!\033[0m ");
     }
 }
