@@ -198,7 +198,7 @@ const courseForm = reactive({ courseId: null, courseName: '', semester: '', cred
 const validateCourseInput = (rule, value, callback) => {
   if (!value) { return callback(new Error('请选择或输入课程')); }
   if (typeof value === 'string') {
-    // Check if the user's manual input matches Name(Code) format
+    // 检查用户手动输入的内容是否匹配 课程名(课程代码) 格式
     const match = value.match(/(.+?)[\(（](.+?)[\)）]$/)
     if (!match) {
       return callback(new Error('请遵循严格格式：课程名（课程编号）'))
@@ -246,14 +246,14 @@ async function saveCourse() {
     if (valid) {
       let finalCourseId = courseForm.courseId
       
-      // If the input is a string, it means the user created a new course manually
+      // 如果输入是字符串，说明用户手动创建了新课程
       if (typeof finalCourseId === 'string') {
         const match = finalCourseId.match(/(.+?)[\(（](.+?)[\)）]$/)
         if (match) {
           const newCourseName = match[1].trim()
           const newCourseCode = match[2].trim()
           try {
-            // The store internally adds the course and refetches, then returns the ID
+            // 状态库内部添加了课程并重新拉取数据，然后返回了 ID
             finalCourseId = await store.addCourse({ 
               name: newCourseName, 
               code: newCourseCode,

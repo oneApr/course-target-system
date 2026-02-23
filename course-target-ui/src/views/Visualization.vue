@@ -219,8 +219,7 @@ function renderRadar() {
     dataValues.push(d.achievementRate || 0)
   })
 
-  // ECharts requires at least 3 indicators for a proper radar naturally, 
-  // but it works with less, just looks weird. We adapt.
+  // ECharts 默认需要至少 3 个指标才能形成标准的雷达图，但只有 1 或 2 个指标也能工作，只是看起来有些奇怪。这里作了适配。
   radarInstance.setOption({
     tooltip: { trigger: 'item' },
     radar: {

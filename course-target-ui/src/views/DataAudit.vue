@@ -236,7 +236,7 @@ async function confirmAudit() {
   showAuditDialog.value = false
 }
 
-// Reset to pending for re-review
+// 重置为待审核状态以便重新审核
 async function doReview(row) {
   try {
     await auditRecord(row.id, { status: '待审核', auditComment: '' })

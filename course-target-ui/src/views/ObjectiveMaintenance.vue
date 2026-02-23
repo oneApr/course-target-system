@@ -114,7 +114,7 @@ const currentCourseTeachers = computed(() => {
 
 onMounted(async () => {
   await store.fetchCourses()
-  await store.fetchCourseTasks() // Fetch course tasks
+  await store.fetchCourseTasks() // 获取课程任务
   if (store.selectedCourseId) {
     await store.fetchObjectives(store.selectedCourseId)
   }

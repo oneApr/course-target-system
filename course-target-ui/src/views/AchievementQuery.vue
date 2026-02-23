@@ -209,7 +209,7 @@ function getTeacherAttr(id, attr) {
   return t ? t[attr] : ''
 }
 function routeToEdit(row) {
-  // Jump to data-upload view and pass record id so user can modify
+  // 跳转到数据上传视图并传递记录ID供用户修改
   router.push({ path: '/teacher/data-upload', query: { editId: row.id } })
 }
 </script>
